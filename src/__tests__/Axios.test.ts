@@ -8,7 +8,7 @@ import { useAxios } from '../index';
 import { RequestInterceptor, ResponseInterceptor } from '../Interceptor';
 import { createTodoServer, TodoApi } from './Common';
 
-describe('useDynamo', () => {
+describe('useAxios', () => {
   test('Creates the axios instance via the factory', async () => {
     const container = createContainer([useAxios({ baseURL: 'http://localhost/test' })]);
     const instance = container.get<AxiosInstance>(AxiosServices.AxiosInstance);
@@ -27,10 +27,7 @@ describe('useDynamo', () => {
 
     const requestInterceptor = new StubInterceptor();
     const testModule = createServiceModule('testModule', (services) =>
-      services.addDependency<RequestInterceptor>(
-        AxiosServices.RequestInterceptors,
-        requestInterceptor as RequestInterceptor,
-      ),
+      services.array<RequestInterceptor>(AxiosServices.RequestInterceptors, requestInterceptor as RequestInterceptor),
     );
 
     const port = 3001;
@@ -55,10 +52,7 @@ describe('useDynamo', () => {
 
     const interceptor = new StubInterceptor();
     const testModule = createServiceModule('testModule', (services) =>
-      services.addDependency<ResponseInterceptor>(
-        AxiosServices.ResponseInterceptors,
-        interceptor as ResponseInterceptor,
-      ),
+      services.array<ResponseInterceptor>(AxiosServices.ResponseInterceptors, interceptor as ResponseInterceptor),
     );
 
     const port = 3001;

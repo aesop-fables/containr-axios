@@ -1,5 +1,5 @@
 import { AxiosServices } from './AxiosServices';
-import { inject } from '@aesop-fables/containr';
+import { injectArray } from '@aesop-fables/containr';
 import { Interceptor, RequestInterceptor, ResponseInterceptor } from './Interceptor';
 import axios, { AxiosInstance, CreateAxiosDefaults, AxiosResponse } from 'axios';
 
@@ -31,8 +31,8 @@ const onRejected = <T>(interceptor: Interceptor<T>): InterceptorProxy<AxiosRespo
 
 export class AxiosFactory implements IAxiosFactory {
   constructor(
-    @inject(AxiosServices.RequestInterceptors) private readonly requestInterceptors: RequestInterceptor[],
-    @inject(AxiosServices.ResponseInterceptors) private readonly responseInterceptors: ResponseInterceptor[],
+    @injectArray(AxiosServices.RequestInterceptors) private readonly requestInterceptors: RequestInterceptor[],
+    @injectArray(AxiosServices.ResponseInterceptors) private readonly responseInterceptors: ResponseInterceptor[],
   ) {}
 
   create(settings?: CreateAxiosDefaults): AxiosInstance {
