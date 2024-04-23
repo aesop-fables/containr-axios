@@ -1,3 +1,11 @@
+const CI = process.env.CI === 'true';
+
+const reporters = ['default'];
+
+if (CI) {
+  reporters.push('jest-junit');
+}
+
 // eslint-disable-next-line no-undef
 module.exports = {
   transform: {
