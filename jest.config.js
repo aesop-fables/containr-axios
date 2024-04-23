@@ -8,6 +8,7 @@ if (CI) {
 
 // eslint-disable-next-line no-undef
 module.exports = {
+  reporters,
   transform: {
     '^.+\\.(t|j)sx?$': 'ts-jest',
   },
