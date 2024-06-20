@@ -42,7 +42,7 @@
     "jest-mock-extended": "^3.0.6",
     "prettier": "^3.0.3",
     "reflect-metadata": "^0.2.2",
-    "ts-jest": "29.1.2",
+    "ts-jest": "29.1.5",
     "typescript": "^5.4.5"
   },
   "peerDependencies": {
