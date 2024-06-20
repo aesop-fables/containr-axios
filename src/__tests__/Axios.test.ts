@@ -1,7 +1,7 @@
 /** @jest-environment node */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import 'reflect-metadata';
-import { createContainer, createServiceModule } from '@aesop-fables/containr';
+import { Scopes, createContainer, createServiceModule, inject } from '@aesop-fables/containr';
 import { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 import { AxiosServices } from '../AxiosServices';
 import { useAxios } from '../index';
@@ -16,19 +16,12 @@ describe('useAxios', () => {
   });
 
   test('Activates request interceptors > onFulfilled', async () => {
-    class StubInterceptor implements RequestInterceptor {
-      public wasFulfilled = false;
-
-      async onFulfilled(config: InternalAxiosRequestConfig): Promise<InternalAxiosRequestConfig> {
-        this.wasFulfilled = true;
-        return config;
-      }
-    }
-
-    const requestInterceptor = new StubInterceptor();
-    const testModule = createServiceModule('testModule', (services) =>
-      services.array<RequestInterceptor>(AxiosServices.RequestInterceptors, requestInterceptor as RequestInterceptor),
-    );
+    const context: InterceptorRecordingContext = { invoked: false };
+    const testModule = createServiceModule('testModule', (services) => {
+      services.singleton(recordingContextKey, context);
+      services.autoResolve<CommandDispatcher>(dispatcherKey, CommandDispatcher, Scopes.Transient);
+      services.arrayAutoResolve<RequestInterceptor>(AxiosServices.RequestInterceptors, StubRequestInterceptor);
+    });
 
     const port = 3001;
     const server = createTodoServer(port);
@@ -37,29 +30,59 @@ describe('useAxios', () => {
 
     await todoApi.listAll();
     server.close();
-    expect(requestInterceptor.wasFulfilled).toBeTruthy();
+    expect(context.invoked).toBeTruthy();
   });
 
   test('Activates response interceptors > onRejected', async () => {
-    class StubInterceptor implements ResponseInterceptor {
-      public wasRejected = false;
-
-      onRejected(error: any): any {
-        this.wasRejected = true;
-        return error;
-      }
-    }
-
-    const interceptor = new StubInterceptor();
-    const testModule = createServiceModule('testModule', (services) =>
-      services.array<ResponseInterceptor>(AxiosServices.ResponseInterceptors, interceptor as ResponseInterceptor),
-    );
+    const context: InterceptorRecordingContext = { invoked: false };
+    const testModule = createServiceModule('testModule', (services) => {
+      services.singleton(recordingContextKey, context);
+      services.autoResolve<CommandDispatcher>(dispatcherKey, CommandDispatcher, Scopes.Transient);
+      services.arrayAutoResolve<ResponseInterceptor>(AxiosServices.ResponseInterceptors, StubResponseInterceptor);
+    });
 
     const port = 3001;
     const container = createContainer([useAxios({ baseURL: `http://localhost:${port}` }), testModule]);
     const todoApi = container.resolve(TodoApi);
 
     await todoApi.show('blah');
-    expect(interceptor.wasRejected).toBeTruthy();
+    expect(context.invoked).toBeTruthy();
   });
 });
+
+type InterceptorRecordingContext = {
+  invoked: boolean;
+};
+
+const recordingContextKey = 'interceptorRecordingContext';
+const dispatcherKey = 'dispatcher';
+
+class CommandDispatcher {
+  constructor(@inject(recordingContextKey) private readonly context: InterceptorRecordingContext) {}
+
+  dispatchInvoke() {
+    this.context.invoked = true;
+  }
+
+  dispatchReject() {
+    this.context.invoked = true;
+  }
+}
+
+class StubRequestInterceptor implements RequestInterceptor {
+  constructor(@inject(dispatcherKey) private readonly dispatcher: CommandDispatcher) {}
+
+  async onFulfilled(config: InternalAxiosRequestConfig): Promise<InternalAxiosRequestConfig> {
+    this.dispatcher.dispatchInvoke();
+    return config;
+  }
+}
+
+class StubResponseInterceptor implements ResponseInterceptor {
+  constructor(@inject(dispatcherKey) private readonly dispatcher: CommandDispatcher) {}
+
+  onRejected(error: any): any {
+    this.dispatcher.dispatchReject();
+    return error;
+  }
+}
