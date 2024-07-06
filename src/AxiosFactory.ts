@@ -1,10 +1,12 @@
 import { AxiosServices } from './AxiosServices';
 import { injectArray } from '@aesop-fables/containr';
 import { Interceptor, RequestInterceptor, ResponseInterceptor } from './Interceptor';
-import axios, { AxiosInstance, CreateAxiosDefaults, AxiosResponse } from 'axios';
+import axios, { AxiosInstance, AxiosResponse } from 'axios';
+import { AxiosOptions } from './AxiosOptions';
+import * as AxiosLogger from 'axios-logger';
 
 export interface IAxiosFactory {
-  create(settings?: CreateAxiosDefaults): AxiosInstance;
+  create(settings?: AxiosOptions): AxiosInstance;
 }
 
 declare type InterceptorProxy<T> = (value: T) => Promise<T>;
@@ -35,8 +37,29 @@ export class AxiosFactory implements IAxiosFactory {
     @injectArray(AxiosServices.ResponseInterceptors) private readonly responseInterceptors: ResponseInterceptor[],
   ) {}
 
-  create(settings?: CreateAxiosDefaults): AxiosInstance {
+  create(options?: AxiosOptions): AxiosInstance {
+    const { logging, ...settings } = options ?? {};
     const instance = axios.create(settings);
+
+    if (logging?.enabled) {
+      if (!logging.request) {
+        instance.interceptors.request.use(AxiosLogger.requestLogger, AxiosLogger.errorLogger);
+      } else {
+        instance.interceptors.request.use(
+          (req) => AxiosLogger.requestLogger(req, logging.request),
+          (req) => AxiosLogger.errorLogger(req, logging.request),
+        );
+      }
+
+      if (!logging.response) {
+        instance.interceptors.response.use(AxiosLogger.responseLogger, AxiosLogger.errorLogger);
+      } else {
+        instance.interceptors.response.use(
+          (req) => AxiosLogger.responseLogger(req, logging.response),
+          (req) => AxiosLogger.errorLogger(req, logging.response),
+        );
+      }
+    }
 
     this.runRequestInterceptors(instance);
     this.runResponseInterceptors(instance);

@@ -4,13 +4,17 @@ import 'reflect-metadata';
 import { Scopes, createContainer, createServiceModule, inject } from '@aesop-fables/containr';
 import { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 import { AxiosServices } from '../AxiosServices';
-import { useAxios } from '../index';
+import { useAxios } from '../useAxios';
 import { RequestInterceptor, ResponseInterceptor } from '../Interceptor';
 import { createTodoServer, TodoApi } from './Common';
 
 describe('useAxios', () => {
   test('Creates the axios instance via the factory', async () => {
-    const container = createContainer([useAxios({ baseURL: 'http://localhost/test' })]);
+    const axios = useAxios({
+      baseURL: 'http://localhost/test',
+      logging: { enabled: true },
+    });
+    const container = createContainer([axios]);
     const instance = container.get<AxiosInstance>(AxiosServices.AxiosInstance);
     expect(instance.defaults.baseURL).toBe('http://localhost/test');
   });
@@ -25,7 +29,11 @@ describe('useAxios', () => {
 
     const port = 3001;
     const server = createTodoServer(port);
-    const container = createContainer([useAxios({ baseURL: `http://localhost:${port}` }), testModule]);
+    const axios = useAxios({
+      baseURL: `http://localhost:${port}`,
+      logging: { enabled: true },
+    });
+    const container = createContainer([axios, testModule]);
     const todoApi = container.resolve(TodoApi);
 
     await todoApi.listAll();
