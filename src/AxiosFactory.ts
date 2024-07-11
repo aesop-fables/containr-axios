@@ -11,7 +11,7 @@ export interface IAxiosFactory {
 
 declare type InterceptorProxy<T> = (value: T) => Promise<T>;
 
-const onFulfilled = <T>(interceptor: Interceptor<T>): InterceptorProxy<T> => {
+export const onFulfilled = <T>(interceptor: Interceptor<T>): InterceptorProxy<T> => {
   return (val) => {
     if (interceptor.onFulfilled) {
       return interceptor.onFulfilled(val);
@@ -21,7 +21,7 @@ const onFulfilled = <T>(interceptor: Interceptor<T>): InterceptorProxy<T> => {
   };
 };
 
-const onRejected = <T>(interceptor: Interceptor<T>): InterceptorProxy<AxiosResponse> => {
+export const onRejected = <T>(interceptor: Interceptor<T>): InterceptorProxy<AxiosResponse> => {
   return (val) => {
     if (interceptor.onRejected) {
       return interceptor.onRejected(val);
